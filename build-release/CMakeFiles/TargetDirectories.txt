@@ -1,0 +1,3 @@
+/home/pizza/CLionProjects/DiscordWebhookManager/build-release/CMakeFiles/DiscordWebhookManager.dir
+/home/pizza/CLionProjects/DiscordWebhookManager/build-release/CMakeFiles/edit_cache.dir
+/home/pizza/CLionProjects/DiscordWebhookManager/build-release/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,23 @@
+{
+    "content": "Hello!",
+    "embeds": [
+        {
+            "author": {
+                "name": "Author Name"
+            },
+            "title": "TITLE",
+            "description": "Description",
+            "fields": [
+                {
+                    "name": "Field1",
+                    "value": "Field1 value",
+                    "inline": false
+                }
+            ],
+            "color": 16711680,
+            "footer": {
+                "text": "Fotter!"
+            }
+        }
+    ]
+}

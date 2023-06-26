@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG CMakeFiles/DiscordWebhookManager.dir/main.c.o -o DiscordWebhookManager  -lcurl -lcjson 
