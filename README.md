@@ -1,5 +1,5 @@
 # DiscordWebHookManager
-Simple webhook manager written in C using libcurl
+Simple webhook manager written in C using libcurl and cJSON
 
 # Features
 
