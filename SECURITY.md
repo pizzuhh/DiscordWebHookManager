@@ -12,4 +12,4 @@ currently being supported with security updates.
 | v1.0     | :x: |
 
 ## Want to report a bug or have a suggestion?
-Just go the Issues page!
+Just go the <a href="https://github.com/pizzuhh/DiscordWebHookManager/issues">Issues tab</a> and create new issue!
