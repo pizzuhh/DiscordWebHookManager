@@ -1,22 +1,24 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <dirent.h>
+
 #include <curl/curl.h>
 #include <cjson/cJSON.h>
 
 typedef char* string;
 
 size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata);
-void DeleteWebHook(string);
-void SendMessageToWebHook(string);
-void SendMessageToWithJSONWebHook(string);
-int CheckAndDisplayWebhookInfo(string);
-void MM(string);
+void DeleteWebHook(char*);
+void SendMessageToWebHook(char*);
+void SendMessageToWithJSONWebHook(char*);
+int CheckAndDisplayWebhookInfo(char*);
+void MM(char*);
 size_t GetFileSize(FILE*);
 
 int main(void)
 {
-    string URL = (string)malloc(sizeof(char)*1024); //store the URL
+    char* URL = (char*)malloc(sizeof(char)*1024); //store the URL
     char* webhookchk = "https://discord.com/api/webhooks"; //size and webhook link for checking
     size_t strwhlen = strlen(webhookchk);
 
@@ -41,7 +43,7 @@ int main(void)
     //if the file exists read the URL from it
     size_t siz = GetFileSize(load);
     fread(URL, siz, 1, load);
-
+    //check if webhook URL is valid
     if(!strncmp(URL, webhookchk, strwhlen))
     {
         if(CheckAndDisplayWebhookInfo(URL))
@@ -97,14 +99,14 @@ size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
             "avatar url: %s\n"
             "user name: %s\n"
             "user displayname: %s\n"
-            "user id: %s\n--------------------",
+            "user id: %s\n--------------------------\n",
             name->valuestring, id->valuestring, guild_id->valuestring, token->valuestring, channel_id->valuestring, av, user_name->valuestring, user_displayname->valuestring, user_id->valuestring
             );
     free(cJson);free(id);free(channel_id);free(guild_id);free(name);free(token);free(avatar);free(user);free(user_name);
     free(user_displayname);free(user_id);
     return nmemb;
 }
-int CheckAndDisplayWebhookInfo(string URL)
+int CheckAndDisplayWebhookInfo(char* URL)
 {
     CURL *curl = curl_easy_init();
     struct curl_slist *headers = {0};
@@ -123,7 +125,7 @@ int CheckAndDisplayWebhookInfo(string URL)
     return 0;
 
 }
-void MM(string URL)
+void MM(char* URL)
 {
     putc('\n', stdout);
     int c;
@@ -142,7 +144,7 @@ void MM(string URL)
             break;
     }
 }
-void DeleteWebHook(string URL)
+void DeleteWebHook(char* URL)
 {
     //init curl
     CURL *curl = curl_easy_init();
@@ -161,10 +163,10 @@ void DeleteWebHook(string URL)
         printf("[!] fail: %s", curl_easy_strerror(res));
         exit(1);
     }
-    printf("Webhook deleted!");
+    printf("Webhook deleted!\n");
 
 }
-void SendMessageToWebHook(string URL)
+void SendMessageToWebHook(char* URL)
 {
     //init curl
     CURL *curl = curl_easy_init();
@@ -181,7 +183,7 @@ void SendMessageToWebHook(string URL)
 
     message[strlen(message)-1] = '\0';
 
-    string jsond = (string)malloc(sizeof(char)*1024);
+    char* jsond = (char*)malloc(sizeof(char)*1024);
     sprintf(jsond, "{\"content\":\"%s\"}", message);
 
     //setup request & headers
@@ -200,12 +202,12 @@ void SendMessageToWebHook(string URL)
         printf("[!] fail: %s", curl_easy_strerror(res));
         exit(1);
     }
-    printf("Message sent!");
+    printf("Message sent!\n");
 
     free(message);
     free(jsond);
 }
-void SendMessageToWithJSONWebHook(string URL)
+void SendMessageToWithJSONWebHook(char* URL)
 {
     //init curl
     CURL *curl = curl_easy_init();
@@ -214,7 +216,28 @@ void SendMessageToWithJSONWebHook(string URL)
 
     //open file and read the content (must be valid json file)
 
-    string loc = (string)malloc(sizeof(char)*4096);
+    char* loc = (char*)malloc(sizeof(char)*4096);
+    //dispaly .json files if there are any in '.'
+    printf("--JSON files found--\n");
+    struct dirent *ent;
+    DIR *dir = opendir(".");
+    if(!dir)
+    {
+        printf("Cannont open current folder!\n");
+    }
+
+    while((ent = readdir(dir)))
+    {
+        if(strcmp(ent->d_name, ".") && strcmp(ent->d_name, ".."))
+        {
+            char* dot = strrchr(ent->d_name, '.');
+            if(dot && !strcmp(dot, ".json"))
+            {
+                printf("%s\n", ent->d_name); //TODO: improve this if file has more than one '.'
+            }
+        }
+    }
+    printf("--------------------\n");
 
     printf("Enter file location: ");
     getc(stdin);
@@ -229,12 +252,20 @@ void SendMessageToWithJSONWebHook(string URL)
     }
 
     size_t fsize = GetFileSize(json);
-    string filedata = (string)malloc(sizeof(char)*fsize);
+    char* filedata = (char*)malloc(sizeof(char)*fsize);
 
 
 
     fread(filedata, fsize, 1, json);
     fclose(json);
+    //clean the JSON data
+    for (int i = 0; i < strlen(filedata); ++i)
+    {
+        if(filedata[i] == '\x0')
+        {
+            filedata[i] = 'x';
+        }
+    }
 
     //setup request & headers
     headers = curl_slist_append(headers, "content-type: application/json"); //header
@@ -242,7 +273,9 @@ void SendMessageToWithJSONWebHook(string URL)
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_URL, URL);
     curl_easy_setopt(curl, CURLOPT_POST,        1L);
-
+    
+    
+    
     //execute
     res = curl_easy_perform(curl);
 
@@ -252,7 +285,7 @@ void SendMessageToWithJSONWebHook(string URL)
         printf("[!] fail: %s", curl_easy_strerror(res));
         exit(1);
     }
-    printf("Message sent!");
+    printf("Message sent!\n");
 }
 size_t GetFileSize(FILE *file)
 {
