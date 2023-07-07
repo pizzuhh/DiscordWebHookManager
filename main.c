@@ -33,7 +33,7 @@ int main(void)
         URL[strlen(URL)-1] = '\0';
         if(CheckAndDisplayWebhookInfo(URL))
         {
-            printf("[!]Error couldn't fetch webhook info! Check if the link is valid!");
+            printf("[!]Error couldn't fetch webhook info! Check if the link is valid!\n");
             exit(1);
         }
         MM(URL);
@@ -44,11 +44,13 @@ int main(void)
     size_t siz = GetFileSize(load);
     fread(URL, siz, 1, load);
     //check if webhook URL is valid
+    if(URL[(strlen(URL))-1] == '\n')
+        URL[(strlen(URL))-1] = '\0';
     if(!strncmp(URL, webhookchk, strwhlen))
     {
         if(CheckAndDisplayWebhookInfo(URL))
         {
-            printf("[!]Error couldn't fetch webhook info! Check if the link is valid!");
+            printf("[!]Error couldn't fetch webhook info! Check if the link is valid!\n");
             exit(1);
         }
         printf("\n\n[*]Webhook URL: %s\n\n", URL);
@@ -60,10 +62,11 @@ int main(void)
     printf("[?] loading URL from file failed! (invalid URL)\n");
     printf("Enter webhook URL: ");
     fgets(URL, 1024, stdin);
+
     URL[strlen(URL)-1] = '\0';
     if(CheckAndDisplayWebhookInfo(URL))
     {
-        printf("[!]Error couldn't fetch webhook info! Check if the link is valid!");
+        printf("[!]Error couldn't fetch webhook info! Check if the link is valid!\n");
         exit(1);
     }
     MM(URL);
