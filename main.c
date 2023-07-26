@@ -6,8 +6,6 @@
 #include <curl/curl.h>
 #include <cjson/cJSON.h>
 
-typedef char* string;
-
 size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata);
 void DeleteWebHook(char*);
 void SendMessageToWebHook(char*);
@@ -34,9 +32,11 @@ int main(void)
         if(CheckAndDisplayWebhookInfo(URL))
         {
             printf("[!]Error couldn't fetch webhook info! Check if the link is valid!\n");
-            exit(1);
+            //free(URL);
+            return 1;
         }
         MM(URL);
+        //free(URL);
         return 0;
     }
 
@@ -46,15 +46,18 @@ int main(void)
     //check if webhook URL is valid
     if(URL[(strlen(URL))-1] == '\n')
         URL[(strlen(URL))-1] = '\0';
+    fclose(load);
     if(!strncmp(URL, webhookchk, strwhlen))
     {
         if(CheckAndDisplayWebhookInfo(URL))
         {
             printf("[!]Error couldn't fetch webhook info! Check if the link is valid!\n");
-            exit(1);
+            free(URL);
+            return 1;
         }
         printf("\n\n[*]Webhook URL: %s\n\n", URL);
         MM(URL);
+        free(URL);
         return 0;
     }
 
@@ -67,7 +70,7 @@ int main(void)
     if(CheckAndDisplayWebhookInfo(URL))
     {
         printf("[!]Error couldn't fetch webhook info! Check if the link is valid!\n");
-        exit(1);
+        return 1;
     }
     MM(URL);
     return 0;
@@ -76,7 +79,7 @@ int main(void)
 size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
     cJSON *cJson, *id, *channel_id, *guild_id, *name, *token, *avatar, *user, *user_name, *user_displayname, *user_id;
-    char av[1024];
+    char av[1024*3];
     cJson = cJSON_Parse(ptr);
 
     id               =      cJSON_GetObjectItem(cJson, "id");
@@ -91,22 +94,21 @@ size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
     user_id          =      cJSON_GetObjectItem(user, "id");
 
     sprintf(av, "https://cdn.discordapp.com/avatars/%s/%s", id->valuestring, avatar->valuestring);
-
-    printf(
-            "----------INFO------------\n"
-            "name: %s\n"
-            "id: %s\n"
-            "guild_id: %s\n"
-            "token: %s\n"
-            "channel id %s\n"
-            "avatar url: %s\n"
-            "user name: %s\n"
-            "user displayname: %s\n"
-            "user id: %s\n--------------------------\n",
-            name->valuestring, id->valuestring, guild_id->valuestring, token->valuestring, channel_id->valuestring, av, user_name->valuestring, user_displayname->valuestring, user_id->valuestring
+    printf
+            (
+                    "----------INFO------------\n"
+                    "name: %s\n"
+                    "id: %s\n"
+                    "guild_id: %s\n"
+                    "token: %s\n"
+                    "channel id %s\n"
+                    "avatar url: %s\n"
+                    "user name: %s\n"
+                    "user id: %s\n--------------------------\n",
+                    name->valuestring, id->valuestring, guild_id->valuestring, token->valuestring, channel_id->valuestring, av, user_name->valuestring, user_id->valuestring
             );
-    free(cJson);free(id);free(channel_id);free(guild_id);free(name);free(token);free(avatar);free(user);free(user_name);
-    free(user_displayname);free(user_id);
+    cJSON_free(cJson);cJSON_free(id);cJSON_free(channel_id);cJSON_free(guild_id);cJSON_free(name);cJSON_free(token);cJSON_free(avatar);cJSON_free(user);cJSON_free(user_name);
+    cJSON_free(user_displayname);cJSON_free(user_id);
     return nmemb;
 }
 int CheckAndDisplayWebhookInfo(char* URL)
@@ -121,6 +123,10 @@ int CheckAndDisplayWebhookInfo(char* URL)
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 
     res = curl_easy_perform(curl);
+
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(headers);
+
     if(res != CURLE_OK)
     {
         return 1;
@@ -160,6 +166,8 @@ void DeleteWebHook(char* URL)
     //execute
     res = curl_easy_perform(curl);
 
+    curl_easy_cleanup(curl);
+
     //error check
     if(res != CURLE_OK)
     {
@@ -174,6 +182,7 @@ void SendMessageToWebHook(char* URL)
     //init curl
     CURL *curl = curl_easy_init();
     struct curl_slist *headers = {0};
+
     CURLcode res;
 
     //setup message
@@ -196,9 +205,14 @@ void SendMessageToWebHook(char* URL)
     curl_easy_setopt(curl, CURLOPT_URL, URL);
     curl_easy_setopt(curl, CURLOPT_POST,        1L);
 
+
+
     //execute
     res = curl_easy_perform(curl);
-
+    free(message);
+    free(jsond);
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(headers);
     //error checks
     if (res != CURLE_OK)
     {
@@ -206,9 +220,6 @@ void SendMessageToWebHook(char* URL)
         exit(1);
     }
     printf("Message sent!\n");
-
-    free(message);
-    free(jsond);
 }
 void SendMessageToWithJSONWebHook(char* URL)
 {
@@ -220,6 +231,7 @@ void SendMessageToWithJSONWebHook(char* URL)
     //open file and read the content (must be valid json file)
 
     char* loc = (char*)malloc(sizeof(char)*4096);
+
     //dispaly .json files if there are any in '.'
     printf("--JSON files found--\n");
     struct dirent *ent;
@@ -261,6 +273,7 @@ void SendMessageToWithJSONWebHook(char* URL)
 
     fread(filedata, fsize, 1, json);
     fclose(json);
+    free(loc);
     //clean the JSON data
     for (int i = 0; i < strlen(filedata); ++i)
     {
@@ -276,12 +289,13 @@ void SendMessageToWithJSONWebHook(char* URL)
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_URL, URL);
     curl_easy_setopt(curl, CURLOPT_POST,        1L);
-    
-    
-    
+
+
+
+
     //execute
     res = curl_easy_perform(curl);
-
+    free(filedata);
     //error checks
     if (res != CURLE_OK)
     {
